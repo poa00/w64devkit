@@ -2,6 +2,7 @@ FROM debian:bullseye-slim
 
 ARG VERSION=1.20.0
 ARG PREFIX=/w64devkit
+ARG Z7_VERSION=2301
 ARG BINUTILS_VERSION=2.40
 ARG BUSYBOX_VERSION=FRP-5181-g5c1a3b00e
 ARG CTAGS_VERSION=6.0.0
@@ -20,11 +21,12 @@ ARG CPPCHECK_VERSION=2.10
 ARG VIM_VERSION=9.0
 
 RUN apt-get update && apt-get install --yes --no-install-recommends \
-  build-essential curl libgmp-dev libmpc-dev libmpfr-dev m4 zip
+  build-essential curl libgmp-dev libmpc-dev libmpfr-dev m4 p7zip-full
 
 # Download, verify, and unpack
 
 RUN curl --insecure --location --remote-name-all --remote-header-name \
+    https://downloads.sourceforge.net/project/sevenzip/7-Zip/23.01/7z$Z7_VERSION-src.tar.xz \
     https://ftp.gnu.org/gnu/binutils/binutils-$BINUTILS_VERSION.tar.xz \
     https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz \
     https://ftp.gnu.org/gnu/gdb/gdb-$GDB_VERSION.tar.xz \
@@ -43,6 +45,7 @@ RUN curl --insecure --location --remote-name-all --remote-header-name \
     https://github.com/danmar/cppcheck/archive/$CPPCHECK_VERSION.tar.gz
 COPY src/SHA256SUMS $PREFIX/src/
 RUN sha256sum -c $PREFIX/src/SHA256SUMS \
+ && tar xJf 7z$Z7_VERSION-src.tar.xz --xform 's%^%7z/%' \
  && tar xJf binutils-$BINUTILS_VERSION.tar.xz \
  && tar xzf busybox-w32-$BUSYBOX_VERSION.tgz \
  && tar xzf ctags-$CTAGS_VERSION.tar.gz \
@@ -467,6 +470,13 @@ RUN cat $PREFIX/src/cppcheck-*.patch | patch -p1 \
         -o $PREFIX/bin/cppcheck.exe \
         $PREFIX/src/alias.c -lkernel32
 
+WORKDIR /7z
+COPY src/7z.mak $PREFIX/src/
+RUN sed -i s/CommCtrl/commctrl/ $(grep -Rl CommCtrl CPP/) \
+ && sed -i s%7z\\.ico%$PREFIX/src/w64devkit.ico% \
+           CPP/7zip/Bundles/SFXWin/resource.rc \
+ && make -f $PREFIX/src/7z.mak -j$(nproc) CROSS=$ARCH-
+
 # Pack up a release
 
 WORKDIR /
@@ -498,6 +508,7 @@ RUN printf "id ICON \"$PREFIX/src/w64devkit.ico\"" >w64devkit.rc \
         >>$PREFIX/COPYING.MinGW-w64-runtime.txt . \
  && cat /mingw-w64-v$MINGW_VERSION/mingw-w64-libraries/winpthreads/COPYING \
         >>$PREFIX/COPYING.MinGW-w64-runtime.txt \
- && echo $VERSION >$PREFIX/VERSION.txt
+ && echo $VERSION >$PREFIX/VERSION.txt \
+ && 7z a -mx=9 $PREFIX.7z $PREFIX
 ENV PREFIX=${PREFIX}
-CMD zip -q9Xr - $PREFIX
+CMD cat /7z/7z.sfx $PREFIX.7z

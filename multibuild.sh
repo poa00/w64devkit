@@ -9,7 +9,6 @@
 
 set -e
 arch=""
-compact=no
 dryrun=
 flavors=""
 suffix="$(git describe --exact-match 2>/dev/null | tr v - || true)"
@@ -38,7 +37,6 @@ while getopts 48abfhmnOs: opt; do
         f) flavors="$flavors -fortran";;
         h) usage; exit 0;;
         n) dryrun=echo;;
-        O) compact=yes;;
         s) suffix="$OPTARG";;
         ?) usage >&2; exit 1;;
     esac
@@ -85,15 +83,10 @@ for build in $builds; do
     )
     $dryrun docker build -t $target .
     if [ -n "$dryrun" ]; then
-        $dryrun docker run --rm $target ">$build$suffix.zip"
+        $dryrun docker run --rm $target ">$build$suffix.exe"
     else
-        docker run --rm $target >$build$suffix.zip
+        docker run --rm $target >$build$suffix.exe
     fi
 done
-
-if [ $compact = yes ]; then
-    printf "%s$suffix.zip\n" $builds \
-        | xargs -I{} -P$(nproc) $dryrun advzip -z4 {}
-fi
 
 cleanup
