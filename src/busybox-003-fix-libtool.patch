@@ -1,0 +1,20 @@
+--- a/shell/ash.c
++++ b/shell/ash.c
+@@ -11594,6 +11594,17 @@ evalcommand(union node *cmd, int flags)
+ 	}
+ 	*nargv = NULL;
+ 
++	/* Workaround for libtool bug, which assumes the host is an MSYS2
++	 * environment and requires special-case escaping for cmd.exe.
++	 * https://github.com/skeeto/w64devkit/issues/50
++	 */
++	if (argc >= 3 &&
++			!strcmp(argv[0], "cmd") &&
++			!strcmp(argv[1], "//c") &&
++			!strcmp(argv[2], "echo")) {
++		argv[1]++;	/* drop extra slash */
++	}
++
+ 	lastarg = NULL;
+ 	if (iflag && funcline == 0 && argc > 0)
+ 		lastarg = nargv[-1];

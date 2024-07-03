@@ -61,7 +61,7 @@ RUN sha256sum -c $PREFIX/src/SHA256SUMS \
  && tar xzf cppcheck-$CPPCHECK_VERSION.tar.gz
 COPY src/w64devkit.c src/w64devkit.ico src/libmemory.c src/libchkstk.S \
      src/alias.c src/debugbreak.c src/pkg-config.c src/vc++filt.c \
-     src/peports.c $PREFIX/src/
+     src/peports.c src/profile $PREFIX/src/
 
 ARG ARCH=x86_64-w64-mingw32
 
