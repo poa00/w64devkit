@@ -1,20 +1,20 @@
 --- a/shell/ash.c
 +++ b/shell/ash.c
-@@ -11594,6 +11594,17 @@ evalcommand(union node *cmd, int flags)
- 	}
- 	*nargv = NULL;
+@@ -9142,6 +9142,17 @@ tryexec(IF_FEATURE_SH_STANDALONE(int applet_no,) const char *cmd, char **argv, c
+ #endif
  
+ #if ENABLE_PLATFORM_MINGW32
 +	/* Workaround for libtool bug, which assumes the host is an MSYS2
 +	 * environment and requires special-case escaping for cmd.exe.
 +	 * https://github.com/skeeto/w64devkit/issues/50
 +	 */
-+	if (argc >= 3 &&
++	if (string_array_len(argv) >= 3 &&
 +			!strcmp(argv[0], "cmd") &&
 +			!strcmp(argv[1], "//c") &&
 +			!strcmp(argv[2], "echo")) {
 +		argv[1]++;	/* drop extra slash */
 +	}
 +
- 	lastarg = NULL;
- 	if (iflag && funcline == 0 && argc > 0)
- 		lastarg = nargv[-1];
+ 	/* cmd was allocated on the stack with room for an extension */
+ 	add_win32_extension((char *)cmd);
+ 	execve(cmd, argv, envp);
