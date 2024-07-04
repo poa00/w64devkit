@@ -3,4 +3,4 @@
 # the busybox-w32 ash patch for libtool.
 export PATH_SEPARATOR=';'
 export ac_executable_extensions=.exe
-export build_alias=$(gcc -dumpmachine)
+export build_alias=ARCH
